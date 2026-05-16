@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LLM DevOps Assistant</title>
+
+    <style>
+
+        body{
+            font-family: Arial;
+            padding: 40px;
+            background: #f4f4f4;
+        }
+
+        textarea{
+            width: 500px;
+            height: 200px;
+            padding: 10px;
+        }
+
+        button{
+            margin-top: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        #response{
+            margin-top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 500px;
+        }
+
+    </style>
+</head>
+<body>
+
+<h1>LLM Powered DevOps Assistant</h1>
+
+<textarea id="logs" placeholder="Paste Jenkins Logs Here"></textarea>
+
+<br>
+
+<button onclick="analyzeLogs()">Analyze Logs</button>
+
+<div id="response"></div>
+
+<script>
+
+    async function analyzeLogs(){
+
+        const logs = document.getElementById("logs").value;
+
+        const response = await fetch("/api/jenkins/analyze",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"text/plain"
+            },
+
+            body:logs
+        });
+
+        const data = await response.text();
+
+        document.getElementById("response").innerText = data;
+    }
+
+</script>
+
+</body>
+</html>
