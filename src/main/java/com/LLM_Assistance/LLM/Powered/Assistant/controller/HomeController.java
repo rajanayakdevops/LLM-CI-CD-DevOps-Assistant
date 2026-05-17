@@ -7,8 +7,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
+    // setting the home page on starting the apache tomcat at home url
     @GetMapping("/")
     public String home() {
         return "index";
     }
+
 }
