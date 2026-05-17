@@ -1,110 +1,151 @@
-# LLM-Powered DevOps Assistant
+# LLM CI/CD DevOps Assistant
 
-A Spring Boot app that connects to your Jenkins instance, pulls build logs, and runs them through Gemini AI to tell you what broke and how to fix it. Results get saved to MySQL so you have a history of past builds and their analyses.
+Anyone who's worked with CI/CD pipelines knows the pain — a build fails, and now you're scrolling through hundreds of lines of logs trying to figure out what actually went wrong. This project was built to fix that.
+
+---
+
+## The problem it solves
+
+Build failures are a normal part of development.
+
+The frustrating part isn't that they happen — it's the time spent figuring out *why*.
+
+Raw Jenkins logs are often noisy, large, and difficult to scan quickly. Important errors are usually buried between dependency downloads, stack traces, and unrelated console output.
+
+This tool shortens that debugging cycle by extracting the meaningful failure reason and presenting it in a readable format within seconds.
+
+---
 
 ## How it works
 
-You hit the API with a job name → it fetches the latest build logs from Jenkins → sends them to Gemini 2.5 Flash → returns a plain-English explanation of the failure + a suggested fix. Everything gets stored in MySQL so you can look back at previous builds.
+1. User selects a Jenkins job
+2. Application fetches the latest build logs from Jenkins
+3. Logs are sent to Gemini AI for analysis
+4. AI identifies the failure reason and possible fixes
+5. Build details and AI analysis are stored in MongoDB
+6. User can review build history and recurring failures
 
-## Stack
+---
 
-- Java 21 + Spring Boot 3.2.5
-- Spring Data JPA + MySQL
-- Apache HttpClient (Jenkins API calls)
-- Google Gemini 2.5 Flash (AI analysis)
-- Thymeleaf (simple frontend at `/`)
+## Screenshots
 
-## Project structure
+### Jenkins Dashboard
 
-```
-src/main/java/.../
-├── controller/
-│   ├── JenkinsController.java   ← REST endpoints
-│   └── HomeController.java
-├── service/
-│   ├── JenkinsService.java      ← Jenkins API + DB logic
-│   └── LLMService.java          ← Gemini AI calls
-├── model/
-│   └── Build.java               ← JPA entity
-├── repository/
-│   └── BuildRepository.java
-└── config/
-    └── SecurityConfig.java
-```
+<p align="center">
+  <img src="./screenshots/Jenkins_01.png" width="90%" />
+</p>
 
-## Setup
+<p align="center">
+  <img src="./screenshots/Jenkins_02.png" width="90%" />
+</p>
 
-### Prerequisites
-- Java 21
-- Maven
-- MySQL running locally
-- Jenkins instance with API token
-- Gemini API key
+<p align="center">
+  <img src="./screenshots/Jenkins_03.png" width="90%" />
+</p>
 
-### 1. Create the database
+### Console Output
 
-```sql
-CREATE DATABASE test;
-```
+<p align="center">
+  <img src="./screenshots/Console_SC.png" width="90%" />
+</p>
 
-### 2. Configure environment
+### AI Analysis
 
-Create `src/main/resources/application.properties` (don't commit this):
+<p align="center">
+  <img src="./screenshots/AI_Analysis_SC.png" width="90%" />
+</p>
 
-```properties
-spring.application.name=LLM-Powered-Assistant
-server.port=8081
+### Build History
 
-spring.datasource.url=jdbc:mysql://localhost:3306/test
-spring.datasource.username=your_mysql_user
-spring.datasource.password=your_mysql_password
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-spring.jpa.hibernate.ddl-auto=update
+<p align="center">
+  <img src="./screenshots/Build_History_SC.png" width="90%" />
+</p>
 
-jenkins.base.url=http://localhost:8080
-jenkins.user=your_jenkins_user
-jenkins.token=your_jenkins_api_token
+---
 
-gemini.api.key=your_gemini_api_key
-```
+## What it does
 
-### 3. Run
+The assistant connects to your Jenkins instance, pulls the latest build logs, and runs them through Gemini AI. Instead of reading through raw stack traces and cryptic error messages, you get a plain-English breakdown of what failed and what you should do about it.
 
-```bash
-mvn spring-boot:run
-```
+That's the core of it. But there's a bit more going on:
 
-App starts on `http://localhost:8081`
+### Jenkins Integration
 
-## API endpoints
+The application communicates directly with Jenkins using its REST APIs.
 
-| Method | Endpoint | What it does |
-|--------|----------|--------------|
-| GET | `/api/jobs` | Lists all Jenkins job names |
-| GET | `/api/logs?job=<jobName>` | Fetches latest build logs for a job |
-| POST | `/api/analyze` | Sends logs to Gemini, returns analysis |
-| GET | `/api/history?job=<jobName>` | Last 5 builds from DB |
+No copy-pasting logs. The assistant automatically fetches:
 
-### Example — analyze a build
+* Latest build logs
+* Build status
+* Build duration
+* Console output
+* Job history
 
-```bash
-curl -X POST http://localhost:8081/api/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"logs": "...", "jobName": "my-job", "buildNumber": 42}'
-```
+You simply select the Jenkins job, and the system handles the rest.
 
-Response is plain text — what went wrong and how to fix it.
+---
 
-## UI
+### AI-Powered Failure Analysis
 
-There's a basic HTML page at `http://localhost:8081` where you can paste logs and hit Analyze. Nothing fancy, just for quick testing.
+The logs are analyzed using Gemini 2.5 Flash with a focused debugging prompt.
 
-## Known issue
+Instead of dumping technical output back to the user, the AI:
 
-The frontend currently calls `/api/jenkins/analyze` but the controller maps to `/api/analyze` — so the button on the UI won't work until that's fixed in `index.html`.
+* Identifies the actual root cause
+* Explains the failure in human-readable language
+* Suggests possible fixes
+* Highlights important log sections
 
-## Notes
+The goal is to reduce the time spent manually debugging Jenkins builds.
 
-- `spring.jpa.hibernate.ddl-auto=update` will auto-create the `builds` table on first run
-- Logs and AI analysis are stored as `LONGTEXT` in MySQL — handles large build outputs fine
-- CSRF is disabled since this is an internal tool — don't expose it publicly as-is
+---
+
+### Persistent Build History
+
+Every analyzed build gets stored in the database along with:
+
+* Build metadata
+* Jenkins job information
+* Build status
+* Console logs
+* AI-generated analysis
+
+This creates a searchable history of failures and analyses over time.
+
+---
+
+### Pattern Tracking
+
+The assistant stores the latest builds for each Jenkins job, making recurring failures easier to spot.
+
+If the same dependency issue, test failure, or deployment problem appears repeatedly, it becomes obvious when viewing previous analyses side by side.
+
+---
+
+### Browser-Based Log Analysis
+
+The project also includes a lightweight UI for manual testing.
+
+Users can paste raw logs directly into the interface and instantly receive AI-generated failure analysis without connecting to Jenkins.
+
+---
+
+## Tech Stack
+
+* Java
+* Spring Boot
+* Jenkins REST API
+* Gemini 2.5 Flash API
+* MongoDB
+* Maven
+* HTML / CSS / JavaScript
+
+---
+
+## What it doesn't do
+
+This project is designed as an internal developer tool.
+
+It is not intended to be publicly exposed, and it does not automatically modify pipelines or apply fixes on its own.
+
+The AI provides analysis and debugging assistance, while the developer remains in control of the actual solution and deployment decisions.
