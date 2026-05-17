@@ -77,7 +77,7 @@ public class JenkinsController {
             List<Build> history = jenkinsService.getBuildHistory(job);
             return ResponseEntity.ok(history);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to fetch history: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to fetch history: see the MySql driver Connection  " + e.getMessage());
         }
     }
 }
