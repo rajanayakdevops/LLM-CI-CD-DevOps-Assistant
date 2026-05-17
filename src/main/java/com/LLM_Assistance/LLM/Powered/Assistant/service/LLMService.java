@@ -12,6 +12,7 @@ import java.util.Map;
 @Service
 public class LLMService {
 
+    // updating the llm model to gemini 2-5
     @Value("${gemini.api.key}")
     private String apiKey;
 
